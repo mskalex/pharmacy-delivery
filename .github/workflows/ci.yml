@@ -1,0 +1,147 @@
+# GitHub Actions (free for public repositories; private ones have 2000 min/month on the free plan).
+#   build-and-test   — build (warnings are errors), unit + architecture + documentation tests, JUnit/TRX/Cobertura as artifacts
+#   integration      — Testcontainers (PostgreSQL/PostGIS, Redis, RabbitMQ) on the runner's Docker
+#   docker-image     — API image built with the tests inside (Dockerfile stage "test"); report exported from stage "test-results";
+#                      courier simulator image; tags v* are pushed to GitHub Container Registry
+#   code-style       — ReSharper cleanup must not change anything
+# Test results are summarised on the run page (job summary) by scripts/junit-summary.py — no third-party actions.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  build-and-test:
+    name: Build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # MinVer computes the version from git tags
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build product
+        run: dotnet build src/PharmacyDelivery.slnx -c Release
+      - name: Build tests
+        run: dotnet build src/PharmacyDelivery.Tests.slnx -c Release
+      - name: Unit, architecture and documentation tests
+        run: >
+          dotnet test src/PharmacyDelivery.Tests.slnx -c Release --no-build --filter "TestCategory!=Integration"
+          --settings src/PharmacyDelivery.Tests/coverage.runsettings --collect "XPlat Code Coverage"
+          --results-directory test-results
+          --logger "junit;LogFilePath=${{ github.workspace }}/test-results/junit-unit.xml;MethodFormat=Class;FailureBodyFormat=Verbose"
+          --logger "trx;LogFileName=unit.trx"
+      - name: Test summary
+        if: always()
+        run: python3 scripts/junit-summary.py "Unit tests" test-results/junit-unit.xml test-results >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: test-results/
+
+  integration:
+    name: Integration tests (Testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build tests
+        run: dotnet build src/PharmacyDelivery.Tests.slnx -c Release
+      - name: Integration tests
+        run: >
+          dotnet test src/PharmacyDelivery.Tests.slnx -c Release --no-build --filter "TestCategory=Integration"
+          --results-directory test-results
+          --logger "junit;LogFilePath=${{ github.workspace }}/test-results/junit-integration.xml;MethodFormat=Class;FailureBodyFormat=Verbose"
+          --logger "trx;LogFileName=integration.trx"
+      - name: Test summary
+        if: always()
+        run: python3 scripts/junit-summary.py "Integration tests" test-results/junit-integration.xml >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: test-results/
+
+  docker-image:
+    name: Docker images (tests run inside the build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_REF_TYPE" = "tag" ] || version="0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+          echo "IMAGE_PREFIX=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Tests in the image build (report exported even when tests fail)
+        run: >
+          docker build -f src/PharmacyDelivery.Api/Dockerfile --build-arg APP_VERSION="$APP_VERSION"
+          --target test-results --output type=local,dest=test-results .
+      - name: Test summary
+        if: always()
+        run: python3 scripts/junit-summary.py "Tests in the Docker build" test-results/junit.xml test-results >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-build-test-results
+          path: test-results/
+      - name: Fail on red tests
+        run: '[ "$(cat test-results/exit-code)" = "0" ]'
+      - name: Build images
+        run: |
+          docker build -f src/PharmacyDelivery.Api/Dockerfile --build-arg APP_VERSION="$APP_VERSION" -t "$IMAGE_PREFIX/api:$APP_VERSION" .
+          docker build -f src/PharmacyDelivery.CourierSimulator/Dockerfile --build-arg APP_VERSION="$APP_VERSION" -t "$IMAGE_PREFIX/courier-simulator:$APP_VERSION" .
+      - name: Push to GitHub Container Registry (tags v* only)
+        if: github.ref_type == 'tag'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE_PREFIX/api:$APP_VERSION"
+          docker push "$IMAGE_PREFIX/courier-simulator:$APP_VERSION"
+
+  code-style:
+    name: Code style (ReSharper cleanup)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore src/PharmacyDelivery.slnx
+          dotnet restore src/PharmacyDelivery.Tests.slnx
+      - name: Cleanup
+        run: |
+          dotnet jb cleanupcode src/PharmacyDelivery.slnx --profile="PharmacyDelivery: Full Cleanup" --exclude="**/Migrations/**" --verbosity=WARN
+          dotnet jb cleanupcode src/PharmacyDelivery.Tests.slnx --profile="PharmacyDelivery: Full Cleanup" --include="**/PharmacyDelivery.Tests/**/*.cs" --verbosity=WARN
+      - name: No changes allowed
+        run: git diff --exit-code || { echo "::error::Run the format-code skill (dotnet jb cleanupcode) and commit the result"; exit 1; }

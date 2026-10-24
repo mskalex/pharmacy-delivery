@@ -1,0 +1,90 @@
+[
+  {
+    "code": "NYC-MID",
+    "name": "Herald Square Pharmacy",
+    "street": "1250 Broadway",
+    "city": "New York",
+    "postalCode": "10001",
+    "latitude": 40.7476,
+    "longitude": -73.9881,
+    "nonStop": true
+  },
+  {
+    "code": "NYC-SOH",
+    "name": "SoHo Corner Pharmacy",
+    "street": "520 Broadway",
+    "city": "New York",
+    "postalCode": "10012",
+    "latitude": 40.7226,
+    "longitude": -73.9989,
+    "weekdays": { "opens": "08:00", "closes": "22:00" },
+    "saturday": { "opens": "08:00", "closes": "22:00" },
+    "sunday": { "opens": "10:00", "closes": "18:00" }
+  },
+  {
+    "code": "NYC-CHE",
+    "name": "Chelsea Pharmacy",
+    "street": "176 9th Ave",
+    "city": "New York",
+    "postalCode": "10011",
+    "latitude": 40.7453,
+    "longitude": -74.0018,
+    "weekdays": { "opens": "08:00", "closes": "21:00" },
+    "saturday": { "opens": "09:00", "closes": "16:00" }
+  },
+  {
+    "code": "BKN-WBG",
+    "name": "Williamsburg Pharmacy",
+    "street": "190 Bedford Ave",
+    "city": "Brooklyn",
+    "postalCode": "11249",
+    "latitude": 40.7177,
+    "longitude": -73.9573,
+    "weekdays": { "opens": "08:00", "closes": "20:00" },
+    "saturday": { "opens": "09:00", "closes": "15:00" }
+  },
+  {
+    "code": "NYC-FID",
+    "name": "Battery Park 24-Hour Pharmacy",
+    "street": "17 State St",
+    "city": "New York",
+    "postalCode": "10004",
+    "latitude": 40.7030,
+    "longitude": -74.0140,
+    "nonStop": true
+  },
+  {
+    "code": "NYC-UES",
+    "name": "Yorkville Pharmacy",
+    "street": "1201 Lexington Ave",
+    "city": "New York",
+    "postalCode": "10028",
+    "latitude": 40.7772,
+    "longitude": -73.9558,
+    "weekdays": { "opens": "08:00", "closes": "22:00" },
+    "saturday": { "opens": "08:00", "closes": "22:00" },
+    "sunday": { "opens": "09:00", "closes": "20:00" }
+  },
+  {
+    "code": "NYC-EVI",
+    "name": "Astor Place Pharmacy",
+    "street": "21 Astor Pl",
+    "city": "New York",
+    "postalCode": "10003",
+    "latitude": 40.7300,
+    "longitude": -73.9905,
+    "weekdays": { "opens": "09:00", "closes": "21:00" },
+    "saturday": { "opens": "09:00", "closes": "21:00" }
+  },
+  {
+    "code": "NYC-HAR",
+    "name": "Harlem Pharmacy",
+    "street": "253 W 125th St",
+    "city": "New York",
+    "postalCode": "10027",
+    "latitude": 40.8094,
+    "longitude": -73.9503,
+    "weekdays": { "opens": "08:00", "closes": "20:00" },
+    "saturday": { "opens": "09:00", "closes": "14:00" }
+  }
+]

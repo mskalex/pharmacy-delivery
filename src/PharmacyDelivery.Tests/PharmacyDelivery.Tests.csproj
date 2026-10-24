@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The single test project. Folders mirror the layers:
+      Common/, Domain/, Application/, Infrastructure/, Messaging/ — unit tests (no Docker);
+      Architecture/ — dependency rules, DI, documentation consistency (no Docker);
+      Integration/ — Testcontainers (PostgreSQL/PostGIS, Redis, RabbitMQ) + WebApplicationFactory, [Category("Integration")].
+    Fast run without Docker: dotnet test src/PharmacyDelivery.Tests.slnx -filter "TestCategory!=Integration"
+  -->
+  <ItemGroup>
+    <ProjectReference Include="../PharmacyDelivery.Api/PharmacyDelivery.Api.csproj" />
+    <ProjectReference Include="../PharmacyDelivery.CourierSimulator/PharmacyDelivery.CourierSimulator.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- APIs the tests call directly (EF Core queries, Npgsql, MassTransit harness, NLog configuration): referenced explicitly, not via the product projects. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="NLog.Extensions.Logging" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
+  </ItemGroup>
+</Project>

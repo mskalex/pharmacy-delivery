@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="PharmacyDelivery.Common/PharmacyDelivery.Common.csproj" />
+    <Project Path="PharmacyDelivery.Domain/PharmacyDelivery.Domain.csproj" />
+    <Project Path="PharmacyDelivery.Repository/PharmacyDelivery.Repository.csproj" />
+    <Project Path="PharmacyDelivery.Services/PharmacyDelivery.Services.csproj" />
+    <Project Path="PharmacyDelivery.Messaging/PharmacyDelivery.Messaging.csproj" />
+    <Project Path="PharmacyDelivery.Infrastructure/PharmacyDelivery.Infrastructure.csproj" />
+    <Project Path="PharmacyDelivery.Api/PharmacyDelivery.Api.csproj" />
+    <Project Path="PharmacyDelivery.CourierSimulator/PharmacyDelivery.CourierSimulator.csproj" />
+  </Folder>
+  <Folder Name="/solution/">
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../.editorconfig" />
+    <File Path="../docker-compose.yml" />
+    <File Path="../global.json" />
+  </Folder>
+</Solution>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Adapters of service ports: Redis, PSP, ETA, JWT, MassTransit consumers, background jobs, seed. -->
+  <ItemGroup>
+    <ProjectReference Include="..\PharmacyDelivery.Services\PharmacyDelivery.Services.csproj" />
+    <ProjectReference Include="..\PharmacyDelivery.Repository\PharmacyDelivery.Repository.csproj" />
+    <ProjectReference Include="..\PharmacyDelivery.Messaging\PharmacyDelivery.Messaging.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Seed\Data\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

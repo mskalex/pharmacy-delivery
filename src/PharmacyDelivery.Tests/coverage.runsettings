@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Code coverage of the unit test run (Dockerfile stage "test", CI report for GitLab):
+    dotnet test src/PharmacyDelivery.Tests.slnx -filter "TestCategory!=Integration" -settings src/PharmacyDelivery.Tests/coverage.runsettings -collect "XPlat Code Coverage"
+  Measured: the layers covered by unit tests (Common, Domain, Services, Messaging). Repository, Infrastructure and Api
+  are covered by the integration tests (Testcontainers) and would only dilute the number here.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[PharmacyDelivery.Common]*,[PharmacyDelivery.Domain]*,[PharmacyDelivery.Services]*,[PharmacyDelivery.Messaging]*</Include>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

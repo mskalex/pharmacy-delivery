@@ -1,0 +1,34 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+.idea/
+*.DotSettings.user
+TestResults/
+coverage/
+*.coverage
+*.trx
+artifacts/
+
+## Environment and secrets — only *.example files are committed
+env/*.env
+!env/*.env.example
+.env
+*.pem
+keys/
+
+## Logs
+logs/
+*.log
+
+## OS
+Thumbs.db
+.DS_Store
+test-results/
+
+## Python
+__pycache__/
+*.pyc

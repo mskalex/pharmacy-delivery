@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PharmacyDelivery — order demo</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>PharmacyDelivery <small>q-commerce demo</small></h1>
+  <div id="session">
+    <span id="who">not signed in</span>
+    <button id="logout" hidden>Sign out</button>
+  </div>
+</header>
+
+<main>
+  <section id="login-panel" class="card">
+    <h2>Sign in</h2>
+    <form id="login-form">
+      <label>E-mail <input id="email" type="email" value="emily.johnson@example.com" autocomplete="username"></label>
+      <label>Password <input id="password" type="password" value="Demo-Password-2026!" autocomplete="current-password"></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p class="hint">Demo accounts (password <code>Demo-Password-2026!</code>):
+      <button class="link" data-email="emily.johnson@example.com">Emily (customer)</button>
+      <button class="link" data-email="david.cohen@example.com">David (order on the way)</button>
+    </p>
+    <p id="login-error" class="error"></p>
+  </section>
+
+  <section id="shop" class="card" hidden>
+    <h2>1. Cart</h2>
+    <form id="search-form"><input id="search" placeholder="Search, e.g. acetaminophen"><button>Search</button></form>
+    <ul id="products"></ul>
+    <h3>Cart</h3>
+    <ul id="cart"></ul>
+    <p>Total: <strong id="cart-total">$0.00</strong></p>
+    <label>Delivery address <select id="address"></select></label>
+    <label class="inline"><input type="checkbox" id="auto-pharmacy" checked> demo mode: the pharmacy accepts and packs the order by itself</label>
+    <button id="checkout" disabled>Place order and pay</button>
+    <p id="checkout-error" class="error"></p>
+  </section>
+
+  <section id="orders" class="card" hidden>
+    <h2>My orders</h2>
+    <ul id="order-list"></ul>
+  </section>
+
+  <section id="tracking" class="card" hidden>
+    <h2>2. Tracking <span id="order-number"></span></h2>
+    <p>Delivered from: <strong id="pharmacy-name">–</strong><br><span id="pharmacy-address"></span></p>
+    <p>Status: <strong id="status">–</strong> · estimated delivery: <strong id="eta">–</strong></p>
+    <ol id="timeline"></ol>
+    <div id="map"></div>
+    <p class="hint" id="channel">channel: –</p>
+  </section>
+</main>
+
+<footer>Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="/swagger">Swagger</a></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

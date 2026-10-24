@@ -1,0 +1,146 @@
+# Demo scenario of the PharmacyDelivery API (VS / Rider HTTP client, VS Code REST Client).
+# Stand: docker compose up -d --build  (or dotnet run --project src/PharmacyDelivery.Api). Data template: demo.
+# Run the requests top to bottom: named requests (# @name) pass ids and tokens to the next ones.
+# Password of every demo account: Demo-Password-2026!  — test stand only.
+
+@host = http://localhost:5080
+@api = {{host}}/api/v1
+@password = Demo-Password-2026!
+
+### Health (environment, version, dependencies)
+GET {{host}}/health/ready
+
+### 1. Catalog (anonymous)
+# @name products
+GET {{api}}/catalog/products?search=acetaminophen&page=1&pageSize=5
+
+### 2. Customer login
+# @name customer
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "emily.johnson@example.com", "password": "{{password}}" }
+
+### 3. Put the first found product into the cart (quantity 1–10)
+PUT {{api}}/cart/items/{{products.response.body.items[0].id}}
+Authorization: Bearer {{customer.response.body.accessToken}}
+Content-Type: application/json
+
+{ "quantity": 2 }
+
+### 4. Cart
+GET {{api}}/cart
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### 5. Checkout — response: the pharmacy that will deliver and the ETA
+# Idempotency-Key: repeat the request with the same key → 200 with the same order instead of a second order.
+# @name checkout
+POST {{api}}/checkout
+Authorization: Bearer {{customer.response.body.accessToken}}
+Content-Type: application/json
+Idempotency-Key: demo-{{$timestamp}}
+
+{
+  "address": { "street": "11 E 36th St", "city": "New York", "postalCode": "10016", "latitude": 40.7493, "longitude": -73.9822 }
+}
+
+### 6. Start the payment (fake PSP)
+# @name payment
+POST {{api}}/orders/{{checkout.response.body.orderId}}/payments
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### 7. PSP decides — sends the HMAC-signed webhook to /api/v1/webhooks/psp (Development/Test only)
+POST {{api}}/dev/psp/payments/{{payment.response.body.providerPaymentId}}/complete?result=succeeded
+
+### 8. Order: status (paid → assignedToPharmacy after the OrderPaid consumer), pharmacy, ETA, history
+GET {{api}}/orders/{{checkout.response.body.orderId}}
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### 9. Pharmacist of the selected pharmacy
+# The account is pharmacist.<pharmacy code>@pharmacy-delivery.local — the code is in the checkout response (pharmacy.code), e.g. NYC-MID.
+# @name pharmacist
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "pharmacist.nyc-mid@pharmacy-delivery.local", "password": "{{password}}" }
+
+### 10. Pharmacy queue
+GET {{api}}/pharmacy/orders
+Authorization: Bearer {{pharmacist.response.body.accessToken}}
+
+### 11. Accept (within Pharmacy:AcceptanceTimeoutMinutes, otherwise the order moves to the next pharmacy)
+POST {{api}}/pharmacy/orders/{{checkout.response.body.orderId}}/accept
+Authorization: Bearer {{pharmacist.response.body.accessToken}}
+
+### 12. Packed → stock committed, OrderReadyForPickup → dispatch assigns the nearest free courier
+POST {{api}}/pharmacy/orders/{{checkout.response.body.orderId}}/ready
+Authorization: Bearer {{pharmacist.response.body.accessToken}}
+
+### 13. Tracking: courier position is visible only while the order is inDelivery (the simulator drives automatically)
+GET {{api}}/orders/{{checkout.response.body.orderId}}/tracking
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### --- Courier side (what the simulator does) ---
+
+### Courier login
+# @name courier
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "courier1@pharmacy-delivery.local", "password": "{{password}}" }
+
+### Current delivery of the courier
+# @name delivery
+GET {{api}}/courier/deliveries/current
+Authorization: Bearer {{courier.response.body.accessToken}}
+
+### Picked up at the pharmacy → order inDelivery
+POST {{api}}/courier/deliveries/{{delivery.response.body.deliveryId}}/pickup
+Authorization: Bearer {{courier.response.body.accessToken}}
+
+### GPS batch (max Tracking:MaxBatchSize points; implausible jumps are dropped)
+POST {{api}}/courier/locations
+Authorization: Bearer {{courier.response.body.accessToken}}
+Content-Type: application/json
+
+{ "points": [ { "latitude": 40.7490, "longitude": -73.9880, "recordedAt": "{{$datetime iso8601}}", "speedKmh": 25 } ] }
+
+### Delivered
+POST {{api}}/courier/deliveries/{{delivery.response.body.deliveryId}}/deliver
+Authorization: Bearer {{courier.response.body.accessToken}}
+
+### --- Session management ---
+
+### Refresh (rotation: the old refresh token stops working; reusing it revokes the whole session)
+POST {{api}}/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{customer.response.body.refreshToken}}" }
+
+### Active sessions
+GET {{api}}/auth/sessions
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### Logout — the access token is revoked immediately (next call → 401)
+POST {{api}}/auth/logout
+Authorization: Bearer {{customer.response.body.accessToken}}
+
+### --- Admin ---
+
+### Admin login
+# @name admin
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@pharmacy-delivery.local", "password": "{{password}}" }
+
+### Audit log of an order (old → new values)
+GET {{api}}/admin/audit?entityType=Order&entityId={{checkout.response.body.orderId}}
+Authorization: Bearer {{admin.response.body.accessToken}}
+
+### Reset all data to the demo template (Development/Test only)
+POST {{api}}/admin/maintenance/seed/reset
+Authorization: Bearer {{admin.response.body.accessToken}}
+Content-Type: application/json
+
+{ "profile": "demo" }

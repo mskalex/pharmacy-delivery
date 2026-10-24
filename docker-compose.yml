@@ -1,0 +1,131 @@
+# Test stand (ASPNETCORE_ENVIRONMENT=Test). Quick start:  docker compose up -d --build
+# Values after ":-" are TEST-ONLY defaults so the stand starts without any setup; override them in env/test.env:
+#   docker compose --env-file env/test.env up -d --build
+# Infrastructure only (for `dotnet run` in Development):  docker compose up -d postgres redis rabbitmq aspire-dashboard
+
+name: pharmacy-delivery
+
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Test}
+  ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=pharmacy_delivery;Username=pharmacy_delivery;Password=${POSTGRES_PASSWORD:-pharmacy-delivery-test-only}
+  ConnectionStrings__Redis: redis:6379
+  RabbitMq__Host: rabbitmq
+  RabbitMq__Password: ${RABBITMQ_PASSWORD:-pharmacy-delivery-test-only}
+  RabbitMq__ManagementUrl: http://rabbitmq:15672
+  Auth__Jwt__SigningKeyPath: /keys/jwt-signing-key.pem
+  Payments__WebhookSecret: ${PSP_WEBHOOK_SECRET:-test-only-webhook-secret-change-me}
+  Seed__Mode: ${SEED_MODE:-IfEmpty}
+  Seed__Profile: ${SEED_PROFILE:-demo}
+  Seed__UsersPassword: ${SEED_USERS_PASSWORD:-Demo-Password-2026!}
+  OpenTelemetry__OtlpEndpoint: http://aspire-dashboard:18889
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
+    environment:
+      POSTGRES_DB: pharmacy_delivery
+      POSTGRES_USER: pharmacy_delivery
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pharmacy-delivery-test-only}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pharmacy_delivery -d pharmacy_delivery"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    # 7.2 is the last BSD-3 licensed Redis release (see docs/third-party.md).
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: pharmacy_delivery
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-pharmacy-delivery-test-only}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  aspire-dashboard:
+    # OpenTelemetry UI: traces, metrics, structured logs. Unsecured mode is for Development/Test only.
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.5
+    environment:
+      DASHBOARD__FRONTEND__AUTHMODE: Unsecured
+      DASHBOARD__OTLP__AUTHMODE: Unsecured
+    ports:
+      - "${ASPIRE_UI_PORT:-18888}:18888"
+      - "${OTLP_GRPC_PORT:-4317}:18889"
+
+  jwt-keygen:
+    # Generates the ES256 signing key once per environment (kept in a volume, never in the repository).
+    image: alpine:3.20
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -f /keys/jwt-signing-key.pem ]; then
+          apk add --no-cache openssl >/dev/null
+          openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt -out /keys/jwt-signing-key.pem
+          echo "JWT signing key generated"
+        fi
+        chmod 444 /keys/jwt-signing-key.pem
+    volumes:
+      - jwt-keys:/keys
+
+  api:
+    build:
+      context: .
+      dockerfile: src/PharmacyDelivery.Api/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0-local}
+    image: pharmacy-delivery-api:${APP_VERSION:-0.1.0-local}
+    environment:
+      <<: *api-environment
+    ports:
+      - "${API_PORT:-5080}:8080"
+    volumes:
+      - jwt-keys:/keys:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      jwt-keygen: { condition: service_completed_successfully }
+
+  courier-simulator:
+    build:
+      context: .
+      dockerfile: src/PharmacyDelivery.CourierSimulator/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0-local}
+    image: pharmacy-delivery-courier-simulator:${APP_VERSION:-0.1.0-local}
+    environment:
+      DOTNET_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Test}
+      Simulator__ApiBaseUrl: http://api:8080
+      Simulator__Password: ${SEED_USERS_PASSWORD:-Demo-Password-2026!}
+      OpenTelemetry__OtlpEndpoint: http://aspire-dashboard:18889
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  postgres-data:
+  redis-data:
+  jwt-keys:

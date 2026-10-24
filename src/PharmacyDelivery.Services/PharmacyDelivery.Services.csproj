@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Service layer: use cases. Works with the database only through PharmacyDelivery.Repository abstractions (no EF Core types). -->
+  <ItemGroup>
+    <ProjectReference Include="..\PharmacyDelivery.Repository\PharmacyDelivery.Repository.csproj" />
+    <ProjectReference Include="..\PharmacyDelivery.Messaging\PharmacyDelivery.Messaging.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Auth\common-passwords.txt" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,9 @@
+<Solution>
+  <!-- Test solution: the single test project. Projects under test are built through ProjectReference. -->
+  <Project Path="PharmacyDelivery.Tests/PharmacyDelivery.Tests.csproj" />
+  <Folder Name="/solution/">
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../.editorconfig" />
+  </Folder>
+</Solution>

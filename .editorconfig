@@ -1,0 +1,167 @@
+# Code style: ReSharper/Rider defaults, made explicit so every IDE and `dotnet build` agree.
+# ReSharper-only settings live in PharmacyDelivery.slnx.DotSettings (team-shared layer).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,xml,csproj,props,targets,slnx,DotSettings,config}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+max_line_length = 140
+
+# --- Layout -------------------------------------------------------------
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+# --- Language rules -----------------------------------------------------
+csharp_style_namespace_declarations = file_scoped:warning
+# Braces only for multi-line bodies; a single statement goes on the next line without braces.
+csharp_prefer_braces = when_multiline:warning
+resharper_braces_for_ifelse = required_for_multiline
+resharper_braces_for_for = required_for_multiline
+resharper_braces_for_foreach = required_for_multiline
+resharper_braces_for_while = required_for_multiline
+resharper_braces_redundant = true
+resharper_place_simple_embedded_statement_on_same_line = never
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+
+# --- Naming (ReSharper defaults) ----------------------------------------
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.required_prefix = I
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+dotnet_naming_rule.constants_pascal.severity = warning
+dotnet_naming_rule.constants_pascal.symbols = constants
+dotnet_naming_rule.constants_pascal.style = pascal
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.pascal.capitalization = pascal_case
+
+# Ordering matters: the static readonly rule must come after constants.
+dotnet_naming_rule.static_readonly_pascal.severity = warning
+dotnet_naming_rule.static_readonly_pascal.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_pascal.style = pascal
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = private
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+# --- Build-enforced IDE rules -------------------------------------------
+dotnet_diagnostic.IDE0005.severity = warning   # unused usings
+dotnet_diagnostic.IDE0161.severity = warning   # file-scoped namespace
+dotnet_diagnostic.IDE0011.severity = warning   # braces
+dotnet_diagnostic.IDE0040.severity = warning   # accessibility modifiers
+dotnet_diagnostic.IDE0044.severity = warning   # readonly fields
+
+# --- Analyzer tuning (latest-recommended) -------------------------------
+# Logging: message templates are used consistently; source-generated LoggerMessage is used on hot paths only.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+# ASP.NET Core has no SynchronizationContext.
+dotnet_diagnostic.CA2007.severity = none
+# Nullable reference types already cover argument null checks.
+dotnet_diagnostic.CA1062.severity = none
+# Domain names like "Order" or "Delivery" collide with keywords in other languages; irrelevant here.
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1724.severity = none
+# Exceptions carry error codes; parameterless constructors would bypass them.
+dotnet_diagnostic.CA1032.severity = none
+# Background loops and the exception handler intentionally catch everything and log.
+dotnet_diagnostic.CA1031.severity = none
+# Collections in DTOs/records are fine as IReadOnlyList/arrays.
+dotnet_diagnostic.CA1819.severity = none
+dotnet_diagnostic.CA1002.severity = none
+# Culture: identifiers and invariant formatting are used explicitly where it matters.
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1309.severity = none
+dotnet_diagnostic.CA1310.severity = none
+dotnet_diagnostic.CA1311.severity = none
+dotnet_diagnostic.CA1304.severity = none
+# URIs are passed around as strings in configuration and DTOs.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+# Internal types instantiated via DI/reflection.
+dotnet_diagnostic.CA1812.severity = none
+# Static holder types for constants.
+dotnet_diagnostic.CA1052.severity = none
+# Members named after domain concepts.
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1720.severity = none
+# Random is used for the deterministic seed generator and simulator only.
+dotnet_diagnostic.CA5394.severity = none
+# Static members on generic types (PagedResult<T>.Empty).
+dotnet_diagnostic.CA1000.severity = none
+# Value objects implemented as records already override equality.
+dotnet_diagnostic.CA1067.severity = none
+dotnet_diagnostic.CA1515.severity = none
+
+[src/*/{Abstract,Concrete}/**.cs]
+# Area subfolders (Concrete/Seed, Concrete/Jobs, ...) only group files: the namespace stays <Project>.Abstract / <Project>.Concrete.
+# Checked by FolderLayoutTests (TC-7.21.9).
+dotnet_style_namespace_match_folder = false
+resharper_check_namespace_highlighting = none
+
+[src/*Tests/**.cs]
+# Test names use underscores: Method_Scenario_Expected.
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1849.severity = none
+dotnet_diagnostic.CA2234.severity = none
+dotnet_diagnostic.CA1063.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA1001.severity = none
+dotnet_diagnostic.CA2201.severity = none
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1822.severity = none
+
+[src/PharmacyDelivery.Repository/Migrations/**.cs]
+# EF Core generated code: excluded from analyzers and style rules.
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

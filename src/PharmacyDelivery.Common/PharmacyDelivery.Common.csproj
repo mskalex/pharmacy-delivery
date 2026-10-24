@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Cross-cutting code without business logic. BCL only: no NuGet packages and no project references. -->
+</Project>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\PharmacyDelivery.Common\PharmacyDelivery.Common.csproj" />
+  </ItemGroup>
+</Project>

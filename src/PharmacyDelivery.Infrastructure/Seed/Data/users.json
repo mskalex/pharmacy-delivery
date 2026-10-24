@@ -1,0 +1,28 @@
+{
+  "admin": { "email": "admin@pharmacy-delivery.local", "displayName": "Administrator" },
+  "customers": [
+    {
+      "email": "emily.johnson@example.com",
+      "displayName": "Emily Johnson",
+      "addresses": [
+        { "label": "Home", "street": "11 E 36th St", "city": "New York", "postalCode": "10016", "latitude": 40.7493, "longitude": -73.9822 },
+        { "label": "Work", "street": "1 MetroTech Center", "city": "Brooklyn", "postalCode": "11201", "latitude": 40.6936, "longitude": -73.9857 }
+      ]
+    },
+    {
+      "email": "david.cohen@example.com",
+      "displayName": "David Cohen",
+      "addresses": [
+        { "label": "Home", "street": "1155 Manhattan Ave", "city": "Brooklyn", "postalCode": "11222", "latitude": 40.7375, "longitude": -73.9555 }
+      ]
+    }
+  ],
+  "couriers": [
+    { "email": "courier1@pharmacy-delivery.local", "displayName": "Courier 1", "latitude": 40.7490, "longitude": -73.9900 },
+    { "email": "courier2@pharmacy-delivery.local", "displayName": "Courier 2", "latitude": 40.7240, "longitude": -73.9970 },
+    { "email": "courier3@pharmacy-delivery.local", "displayName": "Courier 3", "latitude": 40.7460, "longitude": -74.0040 },
+    { "email": "courier4@pharmacy-delivery.local", "displayName": "Courier 4", "latitude": 40.7190, "longitude": -73.9600 },
+    { "email": "courier5@pharmacy-delivery.local", "displayName": "Courier 5", "latitude": 40.7050, "longitude": -74.0120 },
+    { "email": "courier6@pharmacy-delivery.local", "displayName": "Courier 6", "latitude": 40.7180, "longitude": -73.9580 }
+  ]
+}

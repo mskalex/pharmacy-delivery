@@ -1,0 +1,107 @@
+# CI/CD in GitLab. Test results land in the merge request "Tests" tab (JUnit) and coverage in the diff (Cobertura).
+#   unit tests       — run INSIDE the image build (Dockerfile stage "test"); the report is exported from stage "test-results";
+#   integration      — Testcontainers against Docker-in-Docker;
+#   images           — the image is built from the same cached stages and pushed only when the tests passed;
+#   code style       — ReSharper cleanup must leave no diff.
+stages: [test, publish]
+
+variables:
+  DOCKER_VERSION: "27"
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: /certs
+  DOCKER_TLS_VERIFY: "1"
+  DOCKER_CERT_PATH: /certs/client
+  DOCKER_BUILDKIT: "1"
+  API_IMAGE: $CI_REGISTRY_IMAGE/api
+  SIMULATOR_IMAGE: $CI_REGISTRY_IMAGE/courier-simulator
+
+.docker:
+  image: docker:${DOCKER_VERSION}
+  services: ["docker:${DOCKER_VERSION}-dind"]
+  before_script:
+    # Tag v1.2.3 → 1.2.3; other pipelines → 0.0.0-ci.<pipeline id> (MinVer is overridden: the build context has no .git).
+    - export APP_VERSION="${CI_COMMIT_TAG#v}"; [ -n "$APP_VERSION" ] || export APP_VERSION="0.0.0-ci.${CI_PIPELINE_IID}"
+    - echo "APP_VERSION=$APP_VERSION"
+
+# ReSharper cleanup must not change anything (style is part of the review).
+code-style:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  script:
+    - dotnet tool restore
+    - dotnet jb cleanupcode src/PharmacyDelivery.slnx --profile="PharmacyDelivery: Full Cleanup" --exclude="**/Migrations/**" --verbosity=WARN
+    - dotnet jb cleanupcode src/PharmacyDelivery.Tests.slnx --profile="PharmacyDelivery: Full Cleanup" --include="**/PharmacyDelivery.Tests/**/*.cs" --verbosity=WARN
+    - git diff --exit-code || { echo "Run the format-code skill (jb cleanupcode) and commit the result"; exit 1; }
+
+# Unit, architecture and documentation tests executed by the image build itself.
+# The "test" stage never fails the build step: it stores junit.xml / tests.trx / coverage.cobertura.xml / exit-code,
+# the report is exported first and only then the job fails on a red run — so GitLab always gets the report.
+api-image:
+  extends: .docker
+  stage: test
+  script:
+    - docker build -f src/PharmacyDelivery.Api/Dockerfile --build-arg APP_VERSION="$APP_VERSION" --target test-results --output type=local,dest=test-results .
+    - ls -l test-results
+    - |
+      grep -o 'line-rate="[0-9.]*"' test-results/coverage.cobertura.xml | head -1 | awk -F'"' '{ printf "Line coverage: %.2f%%\n", $2 * 100 }'
+    - '[ "$(cat test-results/exit-code)" = "0" ] || { echo "Unit tests failed (see the Tests tab)"; exit 1; }'
+    # Same build, stages come from the cache; the publish stage refuses to continue on failed tests anyway.
+    - docker build -f src/PharmacyDelivery.Api/Dockerfile --build-arg APP_VERSION="$APP_VERSION" -t "$API_IMAGE:$APP_VERSION" .
+    - docker save "$API_IMAGE:$APP_VERSION" -o api-image.tar
+  coverage: '/Line coverage: (\d+(?:\.\d+)?)%/'
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths: [test-results/, api-image.tar]
+    reports:
+      junit: test-results/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: test-results/coverage.cobertura.xml
+
+integration-tests:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  services: ["docker:${DOCKER_VERSION}-dind"]
+  variables:
+    # Testcontainers talks to the dind service (plain TCP inside the job network); started containers are reachable as "docker".
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_TLS_VERIFY: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+  script:
+    - dotnet test src/PharmacyDelivery.Tests.slnx -c Release --filter "TestCategory=Integration"
+      --results-directory test-results
+      --logger "junit;LogFilePath=$CI_PROJECT_DIR/test-results/junit-integration.xml;MethodFormat=Class;FailureBodyFormat=Verbose"
+      --logger "trx;LogFileName=integration.trx"
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths: [test-results/]
+    reports:
+      junit: test-results/junit-integration.xml
+
+simulator-image:
+  extends: .docker
+  stage: test
+  script:
+    - docker build -f src/PharmacyDelivery.CourierSimulator/Dockerfile --build-arg APP_VERSION="$APP_VERSION" -t "$SIMULATOR_IMAGE:$APP_VERSION" .
+    - docker save "$SIMULATOR_IMAGE:$APP_VERSION" -o simulator-image.tar
+  artifacts:
+    expire_in: 1 day
+    paths: [simulator-image.tar]
+
+# Build once, deploy many: the tested images are pushed unchanged (main → test stand, tags v* → release).
+push-images:
+  extends: .docker
+  stage: publish
+  needs: [code-style, api-image, integration-tests, simulator-image]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+  script:
+    - docker load -i api-image.tar
+    - docker load -i simulator-image.tar
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$API_IMAGE:$APP_VERSION"
+    - docker push "$SIMULATOR_IMAGE:$APP_VERSION"
