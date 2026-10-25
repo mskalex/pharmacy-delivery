@@ -1,6 +1,6 @@
 # PharmacyDelivery — quick-commerce ordering for pharmacies
 
-[![CI](https://github.com/skor555/pharmacy-delivery/actions/workflows/ci.yml/badge.svg)](https://github.com/skor555/pharmacy-delivery/actions/workflows/ci.yml)
+[![CI](https://github.com/mskalex/pharmacy-delivery/actions/workflows/ci.yml/badge.svg)](https://github.com/mskalex/pharmacy-delivery/actions/workflows/ci.yml)
 
 A design document and a working implementation of a quick-commerce ordering system for pharmacies. The customer fills a cart,
 checks out, learns **which pharmacy** will deliver the order and **watches the courier live on a map**. .NET 10, DDD,
@@ -42,7 +42,7 @@ Aspire Dashboard · Swagger · NUnit + Moq + Testcontainers + NetArchTest · Doc
 Requirements: Docker Desktop / Docker Engine with Compose v2, about 3 GB of free memory for Docker.
 
 ```bash
-git clone https://github.com/skor555/pharmacy-delivery.git
+git clone https://github.com/mskalex/pharmacy-delivery.git
 cd pharmacy-delivery
 ```
 
