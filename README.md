@@ -10,7 +10,7 @@ Run it: `docker compose up -d --build`, open <http://localhost:5080> and sign in
 
 ## Background
 
-The project started as a take-home assignment for the company soft4you:
+The project started as a take-home assignment for the company soft4you (softforyou):
 
 > *Prepare a design document for the implementation of the following system: quick-commerce order handling for pharmacies. The
 > customer puts together an order for pharmaceutical products and goes through a standard shopping cart. After placing the order, the
